@@ -1,6 +1,5 @@
-const AppError = require(`${__dirname}/../utils/AppError`);
-module.exports = asyncFN => {
+module.exports = fn => {
   return (req, res, next) => {
-    asyncFN(req, res, next).catch(err => next(new AppError(err.message,400)));
+    Promise.resolve(fn(req, res, next)).catch(next);
   };
 };

@@ -83,7 +83,6 @@ const tourSchema = new mongoose.Schema({
   startDates: [Date]
 });
 tourSchema.pre('save', function() {
-  console.log(this);
   this.slugName = slugify(this.name, { lower: true });
 });
 
@@ -96,7 +95,6 @@ tourSchema.pre(/^find/, function() {
 });
 tourSchema.post(/^find/, function(docs) {
   console.log(`Query took ${Date.now() - this.start} ms`);
-  console.log(docs);
 });
 
 const Tour = mongoose.model('Tour', tourSchema);

@@ -1,14 +1,4 @@
-//problem exist 💥💥
-
 const AppError = require(`${__dirname}/../utils/AppError`);
-
-const handleCastErrorDB = err => {
-  console.log(err);
-  const message = `Invalid ${err.path}: ${err.value}.`;
-  const error = new AppError(message, 400);
-  error.isOperational = true;
-  return error;
-};
 
 const sendErrorDev = (err, res) => {
   res.status(err.statusCode).json({
@@ -28,9 +18,16 @@ const sendErrorProd = (err, res) => {
   } else {
     res.status(500).json({
       status: 'error',
-      message: 'Something went wrong!'
+      message: 'Something went very wrong!'
     });
   }
+};
+
+const handleDuplicateFieldsDB = err => {
+  const value = Object.values(err.keyValue || {})[0] || 'unknown value';
+  const field = Object.keys(err.keyPattern || {})[0] || 'field';
+  const message = `Duplicate ${field} value: "${value}". Please use another value!`;
+  return new AppError(message, 400);
 };
 
 module.exports = (err, req, res, next) => {
@@ -40,11 +37,12 @@ module.exports = (err, req, res, next) => {
   if (process.env.NODE_ENV === 'development') {
     sendErrorDev(err, res);
   } else if (process.env.NODE_ENV === 'production') {
-    let error = Object.create(err);
+    let error = JSON.parse(JSON.stringify(err));
     if (error.name === 'CastError') {
       error = handleCastErrorDB(error);
+    } else if (error.code === 11000) {
+      error = handleDuplicateFieldsDB(error);
     }
-
     sendErrorProd(error, res);
   }
 };

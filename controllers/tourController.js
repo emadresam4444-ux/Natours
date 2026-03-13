@@ -1,7 +1,7 @@
 const TourModel = require('../models/tourModel');
 const asyncWrapper = require('../middleware/asyncWrapper');
 const ApiFeatures = require('../utils/ApiFeatures');
-const AppErorr = require(`${__dirname}/../utils/AppError`);
+const AppError = require(`${__dirname}/../utils/AppError`);
 const aliasTopTours = (req, res, next) => {
   if (!req.query.sort) {
     req.query.sort = '-ratingsAverage,price';
@@ -104,7 +104,7 @@ const getTour = asyncWrapper(async (req, res, next) => {
   const tourId = req.params.id;
   const tour = await TourModel.findById(tourId);
   if (!tour) {
-    return next(new AppErorr('This tour not found', 404));
+    return next(new AppError('This tour not found', 404));
   }
   res.status(200).json({
     status: 'success',
