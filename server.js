@@ -9,10 +9,10 @@ const app = require('./app');
 const mongoose = require('mongoose');
 const DATABASE_URL = process.env.DATABASE;
 const PASSWORD = process.env.PASSWORD;
-const DB = DATABASE_URL.replace('<db_password>', PASSWORD);
+//const DB = DATABASE_URL.replace('<db_password>', PASSWORD);
 
 
-mongoose.connect(DB).then(() => {
+mongoose.connect('mongodb://localhost:27017/Natours').then(() => {
   console.log('DB Connected ✅');
 });
 
