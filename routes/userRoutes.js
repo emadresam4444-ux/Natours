@@ -9,7 +9,6 @@ const {
 const { signup,login,protect } = require(`${__dirname}/../controllers/authController`);
 const router = express.Router();
 
-
 router.route('/signup').post(signup);
 router.route('/login').post(login);
 router

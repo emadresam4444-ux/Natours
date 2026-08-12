@@ -1,5 +1,5 @@
 const User = require('../models/userModel');
-const asyncWrapper = require(`${__dirname}/../middleware/asyncWrapper`);
+const asyncWrapper = require('../middleware/asyncWrapper');
 const AppError = require('../utils/AppError');
 const jwt = require('jsonwebtoken');
 const httpStatusText = require('../utils/httpStatusText');
@@ -40,14 +40,22 @@ const login = asyncWrapper(async (req, res, next) => {
 });
 
 const protect = asyncWrapper(async (req, res, next) => {
+  let token;
+  if(!req.headers.authorization){
+    return next(new AppError('Please login', 401));
+  }
   const authorization = req.headers.authorization;
-  if (!authorization && !authorization.startWith('Bearer')) {
-    const token = authorization.split(' ')[1];
+  if (authorization && authorization.startsWith('Bearer')) {
+     token = authorization.split(' ')[1];
   }
   if (!token) {
     return next(new AppError('Please login', 401));
   }
-  //jwt.verify(token, process.env.SECRET_KEY);
+  const decoded =await jwt.verify(token, process.env.SECRET_KEY);
+  console.log(decoded);
+  req.id=decoded.id;
+  
+  next()
 });
 
 module.exports = { signup, login, protect };

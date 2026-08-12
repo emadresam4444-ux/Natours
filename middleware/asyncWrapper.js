@@ -1,5 +1,8 @@
-module.exports = fn => {
-  return (req, res, next) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-};
+const asyncWrapper = (asyncFn) => {
+return (req,res,next)=>{
+  asyncFn(req,res,next).catch((err)=>{
+    next(err)
+    })
+  }
+}
+module.exports = asyncWrapper;
