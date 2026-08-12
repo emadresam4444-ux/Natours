@@ -39,4 +39,15 @@ const login = asyncWrapper(async (req, res, next) => {
   res.status(200).json({ status: httpStatusText.SUCCESS, token });
 });
 
-module.exports = { signup, login };
+const protect = asyncWrapper(async (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization && !authorization.startWith('Bearer')) {
+    const token = authorization.split(' ')[1];
+  }
+  if (!token) {
+    return next(new AppError('Please login', 401));
+  }
+  //jwt.verify(token, process.env.SECRET_KEY);
+});
+
+module.exports = { signup, login, protect };
