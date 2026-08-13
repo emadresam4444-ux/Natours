@@ -8,7 +8,7 @@ const signToken = id => {
   return jwt.sign({ id }, process.env.SECRET_KEY, { expiresIn: '30d' });
 };
 const signup = asyncWrapper(async (req, res, next) => {
-  const { name, email, photo, password, passwordConfirm } = req.body;
+  const { name, email, photo, password, passwordConfirm ,passwordChangedAt} = req.body;
   const userExist = await User.findOne({ email });
   if (userExist) {
     return next(new AppError('User already exist', 400, httpStatusText.FAIL));
@@ -18,9 +18,10 @@ const signup = asyncWrapper(async (req, res, next) => {
     email,
     photo,
     password,
-    passwordConfirm
+    passwordConfirm,
+    passwordChangedAt
   });
-  const token = jwt.signToken(user._id);
+  const token = signToken(user._id);
   res
     .status(201)
     .json({ status: httpStatusText.SUCCESS, token, data: { user } });
@@ -41,21 +42,27 @@ const login = asyncWrapper(async (req, res, next) => {
 
 const protect = asyncWrapper(async (req, res, next) => {
   let token;
-  if(!req.headers.authorization){
+  if (!req.headers.authorization) {
     return next(new AppError('Please login', 401));
   }
   const authorization = req.headers.authorization;
   if (authorization && authorization.startsWith('Bearer')) {
-     token = authorization.split(' ')[1];
+    token = authorization.split(' ')[1];
   }
   if (!token) {
     return next(new AppError('Please login', 401));
   }
-  const decoded =await jwt.verify(token, process.env.SECRET_KEY);
-  console.log(decoded);
-  req.id=decoded.id;
-  
-  next()
-});
+  const decoded = await jwt.verify(token, process.env.SECRET_KEY);
+  const freshUser = await User.findById(decoded.id);
+  if (!freshUser) {
+    return next(new AppError('user does not exisit ', 401));
+  }
+  if (freshUser.changedPasswordAfter(decoded.iat)) {
+    return next(
+      new AppError('Password has changed , please login again ', 401)
+    );
+  }
 
+  next();
+});
 module.exports = { signup, login, protect };
