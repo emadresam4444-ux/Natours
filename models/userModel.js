@@ -48,7 +48,7 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function() {
   this.password = await bcrypt.hash(this.password, saltRounds);
   this.passwordConfirm = undefined;
-});
+}); 
 
 userSchema.method('correctPassword', async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);

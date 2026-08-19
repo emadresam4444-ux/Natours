@@ -8,7 +8,14 @@ const signToken = id => {
   return jwt.sign({ id }, process.env.SECRET_KEY, { expiresIn: '30d' });
 };
 const signup = asyncWrapper(async (req, res, next) => {
-  const { name, email, photo, password, passwordConfirm ,passwordChangedAt} = req.body;
+  const {
+    name,
+    email,
+    photo,
+    password,
+    passwordConfirm,
+    passwordChangedAt
+  } = req.body;
   const userExist = await User.findOne({ email });
   if (userExist) {
     return next(new AppError('User already exist', 400, httpStatusText.FAIL));
@@ -62,7 +69,7 @@ const protect = asyncWrapper(async (req, res, next) => {
       new AppError('Password has changed , please login again ', 401)
     );
   }
-
+  req.user = freshUser;
   next();
 });
 module.exports = { signup, login, protect };
