@@ -49,13 +49,11 @@ const login = asyncWrapper(async (req, res, next) => {
 
 const protect = asyncWrapper(async (req, res, next) => {
   let token;
-  if (!req.headers.authorization) {
+  const authorization = req.headers.authorization;
+  if (!authorization || !authorization.startsWith('Bearer ')) {
     return next(new AppError('Please login', 401));
   }
-  const authorization = req.headers.authorization;
-  if (authorization && authorization.startsWith('Bearer')) {
-    token = authorization.split(' ')[1];
-  }
+  token = authorization.split(' ')[1];
   if (!token) {
     return next(new AppError('Please login', 401));
   }
