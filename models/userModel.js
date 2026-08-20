@@ -3,6 +3,7 @@ const validator = require('validator');
 const zxcvbn = require('zxcvbn');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+const crypto = require('crypto');
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -47,11 +48,15 @@ const userSchema = new mongoose.Schema({
       message: 'Passwords are not the same!'
     }
   },
-  passwordChangedAt: Date
+  passwordChangedAt: Date,
+  passwordResetToken: String,
+  passwordResetExpires: Date
 });
 userSchema.pre('save', async function() {
-  this.password = await bcrypt.hash(this.password, saltRounds);
-  this.passwordConfirm = undefined;
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, saltRounds);
+    this.passwordConfirm = undefined;
+  }
 });
 
 userSchema.method('correctPassword', async function(candidatePassword) {
@@ -65,6 +70,16 @@ userSchema.methods.changedPasswordAfter = function(JWTTimespamp) {
     //mean passwrod not changed
     return false;
   }
+};
+
+userSchema.methods.createPasswordResetToken = function() {
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+  this.passwordResetExpires = Date.now() + 10 * 1000 * 60; //10 minutes
+  return resetToken;
 };
 const User = mongoose.model('User', userSchema);
 

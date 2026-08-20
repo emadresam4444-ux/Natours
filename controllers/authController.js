@@ -82,5 +82,23 @@ const restrictTo = (...roles) => {
     next();
   };
 };
+const forgetPassword = asyncWrapper(async (req, res, next) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) {
+    return next(new AppError('There is no user with email address ', 404));
+  }
+  const resetToken = user.createPasswordResetToken();
+  await user.save({ validateBeforeSave: false });
+  //contiouse code here , it is not compeleted
+});
 
-module.exports = { signup, login, protect, restrictTo };
+const resetPassword = asyncWrapper(async (req, res, next) => {});
+module.exports = {
+  signup,
+  login,
+  protect,
+  restrictTo,
+  forgetPassword,
+  resetPassword
+};
