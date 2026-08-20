@@ -20,7 +20,11 @@ const userSchema = new mongoose.Schema({
   },
 
   photo: String,
-
+  role: {
+    type: String,
+    enum: ['user', 'guide', 'lead-guide', 'admin'],
+    default: 'user'
+  },
   password: {
     type: String,
     required: [true, 'Password is required'],
@@ -48,7 +52,7 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function() {
   this.password = await bcrypt.hash(this.password, saltRounds);
   this.passwordConfirm = undefined;
-}); 
+});
 
 userSchema.method('correctPassword', async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
