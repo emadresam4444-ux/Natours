@@ -3,7 +3,8 @@ const asyncWrapper = require('../middleware/asyncWrapper');
 const AppError = require('../utils/AppError');
 const jwt = require('jsonwebtoken');
 const httpStatusText = require('../utils/httpStatusText');
-
+const sendEmail = require('../utils/email');
+const crypto = require('crypto');
 const signToken = id => {
   return jwt.sign({ id }, process.env.SECRET_KEY, { expiresIn: '30d' });
 };
@@ -89,11 +90,44 @@ const forgetPassword = asyncWrapper(async (req, res, next) => {
     return next(new AppError('There is no user with email address ', 404));
   }
   const resetToken = user.createPasswordResetToken();
+  const resetURL = `http://localhost:3000/api/v1/user/resetPassword/${resetToken}`;
   await user.save({ validateBeforeSave: false });
-  //contiouse code here , it is not compeleted
+  const info = await sendEmail({
+    email,
+    subject: 'Password Reset',
+    message: `Click this link to reset your password: ${resetURL}`,
+    category: 'Password Reset'
+  });
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    message: 'Password reset link sent to your email'
+  });
 });
 
-const resetPassword = asyncWrapper(async (req, res, next) => {});
+const resetPassword = asyncWrapper(async (req, res, next) => {
+  const resetToken = req.params.resetToken;
+  const passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  const user = await User.findOne({
+    passwordResetToken,
+    passwordResetExpires: { $gt: Date.now() }
+  });
+  if (!user) {
+    return next(new AppError('Token is invalid or has expired', 400));
+  }
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+  res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    message: 'Password Changed Successfully'
+  });
+});
 module.exports = {
   signup,
   login,
