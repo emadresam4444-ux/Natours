@@ -4,14 +4,15 @@ const {
   getUser,
   createUser,
   updateUser,
-  deleteUser
+  deleteUser,
 } = require('./../controllers/userController');
 const {
   signup,
   login,
   protect,
   forgetPassword,
-  resetPassword
+  resetPassword, 
+  updatePassword
 } = require(`${__dirname}/../controllers/authController`);
 const router = express.Router();
 
@@ -19,6 +20,8 @@ router.route('/signup').post(signup);
 router.route('/login').post(login);
 router.route('/forgetPassword').post(forgetPassword);
 router.route('/resetPassword/:resetToken').post(resetPassword);
+router.route('/updatePassword').post(protect,updatePassword);
+
 router
   .route('/')
   .get(protect, getAllUsers)

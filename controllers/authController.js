@@ -58,7 +58,9 @@ const protect = asyncWrapper(async (req, res, next) => {
   if (!token) {
     return next(new AppError('Please login', 401));
   }
-  const decoded = await jwt.verify(token, process.env.SECRET_KEY);
+
+  const decoded = jwt.verify(token, process.env.SECRET_KEY);
+
   const freshUser = await User.findById(decoded.id);
   if (!freshUser) {
     return next(new AppError('user does not exisit ', 401));
@@ -110,16 +112,31 @@ const resetPassword = asyncWrapper(async (req, res, next) => {
     .createHash('sha256')
     .update(resetToken)
     .digest('hex');
-
+    
   const user = await User.findOne({
     passwordResetToken,
     passwordResetExpires: { $gt: Date.now() }
-  });
+  }).select('+password');
   if (!user) {
     return next(new AppError('Token is invalid or has expired', 400));
   }
-  user.password = req.body.password;
-  user.passwordConfirm = req.body.passwordConfirm;
+  if (!req.body.newPassword || !req.body.newPasswordConfirm) {
+    return next(
+      new AppError('Please , Enter New Password and New Password Confirm', 400)
+    );
+  }
+  const isSamePassword = await user.correctPassword(req.body.newPassword);
+  if (isSamePassword) {
+    return next(
+      new AppError(
+        'Please provide both a new password and its confirmation.',
+        400
+      )
+    );
+  }
+
+  user.password = req.body.newPassword;
+  user.passwordConfirm = req.body.newPasswordConfirm;
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
   await user.save();
@@ -128,11 +145,34 @@ const resetPassword = asyncWrapper(async (req, res, next) => {
     message: 'Password Changed Successfully'
   });
 });
+
+const updatePassword = asyncWrapper(async (req, res, next) => {
+  const user = await User.findById(req.user.id).select('+password');
+  const correctPassword = await user.correctPassword(req.body.Currentpassword);
+  if (!correctPassword) {
+    return next(new AppError('Invalid Password ', 401));
+  }
+  if (req.body.Currentpassword === req.body.newPassword) {
+    return next(
+      new AppError(
+        'New password must be different from your current password.',
+        400
+      )
+    );
+  }
+  user.password = req.body.newPassword;
+  user.passwordConfirm = req.body.newPasswordConfirm;
+  await user.save();
+  const token = signToken(user.id);
+  res.status(200).json({ status: httpStatusText.SUCCESS, token });
+});
+
 module.exports = {
   signup,
   login,
   protect,
   restrictTo,
   forgetPassword,
-  resetPassword
+  resetPassword,
+  updatePassword
 };

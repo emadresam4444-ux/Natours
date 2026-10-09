@@ -53,9 +53,12 @@ const userSchema = new mongoose.Schema({
   passwordResetExpires: Date
 });
 userSchema.pre('save', async function() {
-  if (this.isModified('password')) {
-    this.password = await bcrypt.hash(this.password, saltRounds);
-    this.passwordConfirm = undefined;
+  if (!this.isModified('password')) return;
+
+  this.password = await bcrypt.hash(this.password, 12);
+  this.passwordConfirm = undefined;
+  if (!this.isNew) {
+    this.passwordChangedAt = Date.now() - 1000;
   }
 });
 
